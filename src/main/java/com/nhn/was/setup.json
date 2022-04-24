@@ -1,0 +1,41 @@
+{
+"port" : 80,
+"hosts" :[
+ {
+   "hostName" : "ww1.test.com",
+   "documentRoot" : "C:\\Users\\arden\\test\\nhn\\server\\src\\main\\java\\com\\nhn\\was\\test1\\",
+   "errors":[
+      {
+         "code":403,
+         "fileName":"errors/ww1.forbidden.com"
+      },
+      {
+         "code":404,
+         "fileName":"errors/ww1.not-found.com"
+      },
+      {
+         "code":500,
+         "fileName":"errors/ww1.internal-server-error.com"
+      }
+   ]
+ },
+ {
+   "hostName" : "ww2.test.com",
+   "documentRoot" : "C:\\Users\\arden\\test\\nhn\\server\\src\\main\\java\\com\\nhn\\was\\test2\\",
+   "errors":[
+      {
+         "code":403,
+         "fileName":"errors/ww2.forbidden.com"
+      },
+      {
+         "code":404,
+         "fileName":"errors/ww2.not-found.com"
+      },
+      {
+         "code":500,
+         "fileName":"errors/ww2.internal-server-error.com"
+      }
+   ]
+ }
+]
+}
