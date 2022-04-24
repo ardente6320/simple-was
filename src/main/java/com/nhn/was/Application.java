@@ -24,7 +24,7 @@ public class Application {
             JSONObject jsonObject = (JSONObject) parser.parse(reader);
 
             // set the port to listen on
-            int port = (Integer)jsonObject.get("port");
+            int port = Integer.parseInt(jsonObject.get("port").toString());
 
             JSONArray hosts = (JSONArray) jsonObject.get("hosts");
             

@@ -6,12 +6,16 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
+import com.nhn.was.utils.LogUtils;
+
 import org.json.simple.JSONObject;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class HttpServer {
-    private static final Logger logger = Logger.getLogger(HttpServer.class.getCanonicalName());
+    private static final Logger log = LoggerFactory.getLogger(HttpServer.class);
+
     private static final int NUM_THREADS = 50;
     private static final String INDEX_FILE = "index.html";
     private final File rootDirectory;
@@ -32,15 +36,15 @@ public final class HttpServer {
     public void start() throws IOException {
         ExecutorService pool = Executors.newFixedThreadPool(NUM_THREADS);
         try (ServerSocket server = new ServerSocket(port)) {
-            logger.info("Accepting connections on port " + server.getLocalPort());
-            logger.info("Document Root: " + rootDirectory);
+            log.info("Accepting connections on port " + server.getLocalPort());
+            log.info("Document Root: " + rootDirectory);
             while (true) {
                 try {
                     Socket request = server.accept();
                     Runnable r = new RequestProcessor(rootDirectory, INDEX_FILE, request);
                     pool.submit(r);
                 } catch (IOException ex) {
-                    logger.log(Level.WARNING, "Error accepting connection", ex);
+                    log.error("Error accepting connection trace :: {}", LogUtils.getStackTrace(ex));
                 }
             }
         }

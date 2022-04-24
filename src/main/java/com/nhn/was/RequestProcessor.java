@@ -5,13 +5,16 @@ import java.net.Socket;
 import java.net.URLConnection;
 import java.nio.file.Files;
 import java.util.Date;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+
+import com.nhn.was.utils.LogUtils;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class RequestProcessor implements Runnable {
-    private final static Logger logger = Logger.getLogger(RequestProcessor.class.getCanonicalName());
+    private final static Logger log = LoggerFactory.getLogger(RequestProcessor.class);
     private File rootDirectory;
-    private String indexFileName = "index.html";
+    private String indexFileName;
     private Socket connection;
 
     public RequestProcessor(File rootDirectory, String indexFileName, Socket connection) {
@@ -24,8 +27,7 @@ public class RequestProcessor implements Runnable {
         } catch (IOException ex) {
         }
         this.rootDirectory = rootDirectory;
-        if (indexFileName != null)
-            this.indexFileName = indexFileName;
+        this.indexFileName = indexFileName;
         this.connection = connection;
     }
 
@@ -45,7 +47,7 @@ public class RequestProcessor implements Runnable {
                 requestLine.append((char) c);
             }
             String get = requestLine.toString();
-            logger.info(connection.getRemoteSocketAddress() + " " + get);
+            log.info(connection.getRemoteSocketAddress() + " " + get);
             String[] tokens = get.split("\\s+");
             String method = tokens[0];
             String version = "";
@@ -99,7 +101,7 @@ public class RequestProcessor implements Runnable {
                 out.flush();
             }
         } catch (IOException ex) {
-            logger.log(Level.WARNING, "Error talking to " + connection.getRemoteSocketAddress(), ex);
+            log.error("Error talking to {} :: trace :: {}",connection.getRemoteSocketAddress(), LogUtils.getStackTrace(ex));
         } finally {
             try {
                 connection.close();
