@@ -1,7 +1,9 @@
 package com.nhn.was.servlets;
 
-import javax.servlet.http.*;
+import java.io.IOException;
+
+import com.nhn.was.models.*;
 
 public interface SimpleServlet{
-    void service(HttpServletRequest req, HttpServletResponse res);
+    void service(HttpRequest req, HttpResponse res) throws IOException;
 }

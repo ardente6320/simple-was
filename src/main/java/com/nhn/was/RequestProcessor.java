@@ -62,21 +62,24 @@ public class RequestProcessor implements Runnable {
             String[] tokens = get.split("\\s+");
             String method = tokens[0];
             String version = "";
+            String param = null;
             if (method.equals("GET")) {
-                String contextPath = tokens[1];
+                String[] contexts = tokens[1].split("?");
+                String contextPath = contexts[0];
+                param = contexts[1];
                 version = tokens.length > 2 ? tokens[2]:version;
 
                 if (contextPath.endsWith("/")) {
                     // can't find the file
-                    response(hostName,errFiles.get(hostName).get(HttpURLConnection.HTTP_FORBIDDEN),version,out);
+                    response(hostName,errFiles.get(hostName).get(HttpURLConnection.HTTP_FORBIDDEN),param,version,out);
                     return;
                 }
 
-                response(hostName,contextPath,version,out);
+                response(hostName,contextPath,param,version,out);
 
             } else {
                 // method does not equal "GET"
-                response(hostName,errFiles.get(hostName).get(HttpURLConnection.HTTP_INTERNAL_ERROR),version,out);
+                response(hostName,errFiles.get(hostName).get(HttpURLConnection.HTTP_INTERNAL_ERROR),param,version,out);
             }
         } catch (IOException ex) {
             LOG.error("Error talking to {} :: trace :: {}",connection.getRemoteSocketAddress(), LogUtils.getStackTrace(ex));
@@ -91,11 +94,12 @@ public class RequestProcessor implements Runnable {
      * Response To Client
      * @param hostName
      * @param contextPath
+     * @param param
      * @param version
      * @param out
      * @throws IOException
      */
-    private void response(String hostName, String contextPath, String version,Writer out) throws IOException {
+    private void response(String hostName, String contextPath, String param, String version,Writer out) throws IOException {
         File rootDirectory = rootDirectorys.get(hostName);
 
         String contentType = URLConnection.getFileNameMap().getContentTypeFor(contextPath);
@@ -110,7 +114,6 @@ public class RequestProcessor implements Runnable {
 
         } else {
             // can't find the file
-
             theFile = new File(rootDirectory, errFiles.get(hostName).get(HttpURLConnection.HTTP_NOT_FOUND));
             byte[] theData = Files.readAllBytes(theFile.toPath());
             HttpUtils.response(out, HttpURLConnection.HTTP_NOT_FOUND, version, "text/html; charset=utf-8", new String(theData,"UTF-8"));
