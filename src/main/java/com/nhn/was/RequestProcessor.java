@@ -1,123 +1,119 @@
 package com.nhn.was;
 
-import java.io.*;
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Reader;
+import java.io.Writer;
+import java.net.HttpURLConnection;
 import java.net.Socket;
 import java.net.URLConnection;
 import java.nio.file.Files;
-import java.util.Date;
-
-import com.nhn.was.utils.LogUtils;
+import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.nhn.was.utils.HttpUtils;
+import com.nhn.was.utils.LogUtils;
+
 public class RequestProcessor implements Runnable {
-    private final static Logger log = LoggerFactory.getLogger(RequestProcessor.class);
-    private File rootDirectory;
-    private String indexFileName;
+    private static final Logger LOG = LoggerFactory.getLogger(RequestProcessor.class);
+    private Map<String,File> rootDirectorys;
+    private Map<String,Map<Integer,String>> errFiles;
     private Socket connection;
 
-    public RequestProcessor(File rootDirectory, String indexFileName, Socket connection) {
-        if (rootDirectory.isFile()) {
-            throw new IllegalArgumentException(
-                    "rootDirectory must be a directory, not a file");
-        }
-        try {
-            rootDirectory = rootDirectory.getCanonicalFile();
-        } catch (IOException ex) {
-        }
-        this.rootDirectory = rootDirectory;
-        this.indexFileName = indexFileName;
+    public RequestProcessor(Map<String,File> rootDirectorys,Map<String,Map<Integer,String>> errFiles, Socket connection) {
+        this.rootDirectorys = rootDirectorys;
+        this.errFiles = errFiles;
         this.connection = connection;
     }
 
     @Override
     public void run() {
         // for security checks
-        String root = rootDirectory.getPath();
         try {
             OutputStream raw = new BufferedOutputStream(connection.getOutputStream());
             Writer out = new OutputStreamWriter(raw);
             Reader in = new InputStreamReader(new BufferedInputStream(connection.getInputStream()), "UTF-8");
             StringBuilder requestLine = new StringBuilder();
+
             while (true) {
                 int c = in.read();
                 if (c == '\r' || c == '\n')
                     break;
                 requestLine.append((char) c);
             }
+
             String get = requestLine.toString();
-            log.info(connection.getRemoteSocketAddress() + " " + get);
+            String hostName = connection.getInetAddress().getHostName();
+
+            LOG.info("[{}] {}",connection.getRemoteSocketAddress(),get);
+
+            if(!rootDirectorys.containsKey(hostName)) {
+                HttpUtils.response(out, HttpURLConnection.HTTP_NOT_FOUND, "HTTP/1.1", "text/html; charset=utf-8", HttpUtils.getDefault404Body());
+                return;
+            }
+
             String[] tokens = get.split("\\s+");
             String method = tokens[0];
             String version = "";
             if (method.equals("GET")) {
-                String fileName = tokens[1];
-                if (fileName.endsWith("/")) fileName += indexFileName;
-                String contentType =
-                        URLConnection.getFileNameMap().getContentTypeFor(fileName);
-                if (tokens.length > 2) {
-                    version = tokens[2];
-                }
-                File theFile = new File(rootDirectory, fileName.substring(1, fileName.length()));
-                if (theFile.canRead()
-// Don't let clients outside the document root
-                        && theFile.getCanonicalPath().startsWith(root)) {
-                    byte[] theData = Files.readAllBytes(theFile.toPath());
-                    if (version.startsWith("HTTP/")) { // send a MIME header
-                        sendHeader(out, "HTTP/1.0 200 OK", contentType, theData.length);
-                    }
-                    // send the file; it may be an image or other binary data
-                    // so use the underlying output stream
-                    // instead of the writer
-                    raw.write(theData);
-                    raw.flush();
-                } else {
+                String contextPath = tokens[1];
+                version = tokens.length > 2 ? tokens[2]:version;
+
+                if (contextPath.endsWith("/")) {
                     // can't find the file
-                    String body = new StringBuilder("<HTML>\r\n")
-                            .append("<HEAD><TITLE>File Not Found</TITLE>\r\n")
-                            .append("</HEAD>\r\n")
-                            .append("<BODY>")
-                            .append("<H1>HTTP Error 404: File Not Found</H1>\r\n")
-                            .append("</BODY></HTML>\r\n")
-                            .toString();
-                    if (version.startsWith("HTTP/")) { // send a MIME header
-                        sendHeader(out, "HTTP/1.0 404 File Not Found", "text/html; charset=utf-8", body.length());
-                    }
-                    out.write(body);
-                    out.flush();
+                    response(hostName,errFiles.get(hostName).get(HttpURLConnection.HTTP_FORBIDDEN),version,out);
+                    return;
                 }
+
+                response(hostName,contextPath,version,out);
+
             } else {
                 // method does not equal "GET"
-                String body = new StringBuilder("<HTML>\r\n").append("<HEAD><TITLE>Not Implemented</TITLE>\r\n").append("</HEAD>\r\n")
-                        .append("<BODY>")
-                        .append("<H1>HTTP Error 501: Not Implemented</H1>\r\n")
-                        .append("</BODY></HTML>\r\n").toString();
-                if (version.startsWith("HTTP/")) { // send a MIME header
-                    sendHeader(out, "HTTP/1.0 501 Not Implemented",
-                            "text/html; charset=utf-8", body.length());
-                }
-                out.write(body);
-                out.flush();
+                response(hostName,errFiles.get(hostName).get(HttpURLConnection.HTTP_INTERNAL_ERROR),version,out);
             }
         } catch (IOException ex) {
-            log.error("Error talking to {} :: trace :: {}",connection.getRemoteSocketAddress(), LogUtils.getStackTrace(ex));
+            LOG.error("Error talking to {} :: trace :: {}",connection.getRemoteSocketAddress(), LogUtils.getStackTrace(ex));
         } finally {
             try {
                 connection.close();
-            } catch (IOException ex) {
-            }
+            } catch (IOException ex) {}
         }
     }
 
-    private void sendHeader(Writer out, String responseCode, String contentType, int length)
-            throws IOException {
-        out.write(responseCode + "\r\n");
-        Date now = new Date();
-        out.write("Date: " + now + "\r\n");
-        out.write("Server: JHTTP 2.0\r\n");
-        out.write("Content-length: " + length + "\r\n");
-        out.write("Content-type: " + contentType + "\r\n\r\n");
-        out.flush();
+    /**
+     * Response To Client
+     * @param hostName
+     * @param contextPath
+     * @param version
+     * @param out
+     * @throws IOException
+     */
+    private void response(String hostName, String contextPath, String version,Writer out) throws IOException {
+        File rootDirectory = rootDirectorys.get(hostName);
+
+        String contentType = URLConnection.getFileNameMap().getContentTypeFor(contextPath);
+        File theFile = new File(rootDirectory, contextPath);
+
+        if (theFile.canRead()
+                // Don't let clients outside the document root
+                && theFile.getCanonicalPath().startsWith(rootDirectory.getPath())) {
+            byte[] theData = Files.readAllBytes(theFile.toPath());
+
+            HttpUtils.response(out, HttpURLConnection.HTTP_OK, version, contentType, new String(theData,"UTF-8"));
+
+        } else {
+            // can't find the file
+
+            theFile = new File(rootDirectory, errFiles.get(hostName).get(HttpURLConnection.HTTP_NOT_FOUND));
+            byte[] theData = Files.readAllBytes(theFile.toPath());
+            HttpUtils.response(out, HttpURLConnection.HTTP_NOT_FOUND, version, "text/html; charset=utf-8", new String(theData,"UTF-8"));
+        }
     }
 }

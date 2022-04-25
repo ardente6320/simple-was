@@ -1,6 +1,5 @@
 package com.nhn.was;
 
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
@@ -9,14 +8,16 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.nhn.was.utils.LogUtils;
 
 public class Application {
-    private static final Logger logger = Logger.getLogger(HttpServer.class.getCanonicalName());
+    private static final Logger LOG = LoggerFactory.getLogger(Application.class);
 
     public static void main(String[] args) {
-        try {  
+        try {
             // get the Document root
             Reader reader = new FileReader(args[0]);
 
@@ -27,18 +28,11 @@ public class Application {
             int port = Integer.parseInt(jsonObject.get("port").toString());
 
             JSONArray hosts = (JSONArray) jsonObject.get("hosts");
-            
-            for(Object obj : hosts){
-                JSONObject host = (JSONObject) obj;
 
-                HttpServer webserver = new HttpServer(host, port);
-                webserver.start();
-            }
-        } catch (ArrayIndexOutOfBoundsException | FileNotFoundException e) {
-            System.out.println("Usage: java JHTTP docroot port");
-            return;
-        } catch (IOException | ParseException e) {
-            logger.log(Level.SEVERE, "Server could not start", e);
+            HttpServer webserver = new HttpServer(hosts, port);
+            webserver.start();
+        } catch (ArrayIndexOutOfBoundsException | IOException | ParseException e) {
+            LOG.error("Usage: java JHTTP docroot port trace :: {}", LogUtils.getStackTrace(e));
         }
     }
 }
