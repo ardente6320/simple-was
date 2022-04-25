@@ -2,7 +2,7 @@
 <configuration>
     <property value="logs/was.log" name="LOG_FILE"/>
 
-    <logger name="com.simple.was" level="INFO" />
+    <logger name="com.nhn.was" level="INFO" />
 
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
