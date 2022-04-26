@@ -2,7 +2,8 @@ package com.nhn.was.servlets.service;
 
 import java.io.IOException;
 
-import com.nhn.was.models.*;
+import com.nhn.was.models.HttpRequest;
+import com.nhn.was.models.HttpResponse;
 import com.nhn.was.servlets.SimpleServlet;
 
 public class Hello implements SimpleServlet {
