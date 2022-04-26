@@ -3,7 +3,7 @@
    "hosts" :[
     {
       "hostName" : "ww1.test.com",
-      "documentRoot" : "C:\\Users\\USER\\workspaces\\zpPoint\\simple-was\\test1\\",
+      "documentRoot" : "C:\\Users\\arden\\test\\nhn\\server\\root\\test1\\",
       "errors":[
          {
             "code":403,
@@ -21,7 +21,7 @@
     },
     {
       "hostName" : "ww2.test.com",
-      "documentRoot" : "C:\\Users\\USER\\workspaces\\zpPoint\\simple-was\\test2\\",
+      "documentRoot" : "C:\\Users\\arden\\test\\nhn\\server\\root\\test2\\",
       "errors":[
          {
             "code":403,
