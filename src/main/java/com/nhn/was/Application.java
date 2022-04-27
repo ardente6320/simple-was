@@ -1,13 +1,9 @@
 package com.nhn.was;
 
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.Reader;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 
 import org.apache.commons.io.IOUtils;
 import org.json.simple.JSONArray;
@@ -28,9 +24,6 @@ public class Application {
             ClassLoader loader = Application.class.getClassLoader();
             InputStream inputStream = loader.getResourceAsStream("setup.json");
             String jsonString = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
-
-            // Path path = Paths.get(loader.("setup.json").toURI());
-            // Reader reader = new FileReader(path.toString());
             
             JSONParser parser = new JSONParser();
             JSONObject jsonObject = (JSONObject) parser.parse(jsonString);
