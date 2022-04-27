@@ -1,10 +1,7 @@
 package com.nhn.was.models;
 
-import java.io.BufferedInputStream;
-import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
-import java.net.Socket;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -16,8 +13,8 @@ public class HttpRequest {
     private String version ="";
     private String contentType;
 
-    public HttpRequest(Socket connection) throws IOException {
-        reader = new InputStreamReader(new BufferedInputStream(connection.getInputStream()), "UTF-8");
+    public HttpRequest(InputStreamReader reader) {
+        this.reader = reader;
     }
 
     public void setParam(String param){

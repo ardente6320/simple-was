@@ -1,14 +1,15 @@
 package com.nhn.was.utils;
 
+import java.nio.file.AccessDeniedException;
+
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import java.nio.file.AccessDeniedException;
 
 public class HttpUtilsTest {
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
-    
+
     @Test
     public void checkPathValidationTest() throws AccessDeniedException{
         //given
@@ -25,7 +26,7 @@ public class HttpUtilsTest {
     public void checkPathValidationFailTest() throws AccessDeniedException{
         //given
         String given = "/../../test/Hello";
-        
+
         //Exception Then
         expectedException.expect(AccessDeniedException.class);
 
@@ -37,7 +38,7 @@ public class HttpUtilsTest {
     public void checkPathValidationExeFailTest() throws AccessDeniedException{
         //given
         String given = "/test/Hello.exe";
-        
+
         //Exception Then
         expectedException.expect(AccessDeniedException.class);
 

@@ -3,6 +3,9 @@ package com.nhn.was;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
+import java.net.URISyntaxException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -16,10 +19,12 @@ import com.nhn.was.utils.LogUtils;
 public class Application {
     private static final Logger LOG = LoggerFactory.getLogger(Application.class);
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws URISyntaxException {
         try {
             // get the Document root
-            Reader reader = new FileReader(args[0]);
+            ClassLoader loader = Application.class.getClassLoader();
+            Path path = Paths.get(loader.getResource("setup.json").toURI());
+            Reader reader = new FileReader(path.toString());
 
             JSONParser parser = new JSONParser();
             JSONObject jsonObject = (JSONObject) parser.parse(reader);

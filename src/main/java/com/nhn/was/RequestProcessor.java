@@ -1,13 +1,18 @@
 package com.nhn.was;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.Writer;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.HttpURLConnection;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketException;
 import java.nio.file.AccessDeniedException;
@@ -37,8 +42,8 @@ public class RequestProcessor implements Runnable {
     public void run() {
         // for security checks
         try {
-            HttpRequest req = new HttpRequest(connection);
-            HttpResponse res = new HttpResponse(connection);
+            HttpRequest req = new HttpRequest(new InputStreamReader(new BufferedInputStream(connection.getInputStream()), "UTF-8"));
+            HttpResponse res = new HttpResponse(new OutputStreamWriter(new BufferedOutputStream(connection.getOutputStream())));
 
             Reader in = req.getReader();
             Writer out = res.getWriter();
@@ -53,7 +58,8 @@ public class RequestProcessor implements Runnable {
             }
 
             String get = requestLine.toString();
-            req.setHostName(connection.getInetAddress().getHostName());
+            req.setHostName(((InetSocketAddress)connection.getRemoteSocketAddress()).getAddress().getHostName());
+
             req.setContentType("text/html; charset=utf-8");
 
             LOG.info("[{}] {}",connection.getRemoteSocketAddress(),get);
@@ -111,7 +117,7 @@ public class RequestProcessor implements Runnable {
      * @throws
      * @throws IOException
      */
-    private void response(HttpRequest req, HttpResponse res,String contextPath) throws IOException {
+    public void response(HttpRequest req, HttpResponse res,String contextPath) throws IOException {
         String hostName = req.getHostName();
         String version = req.getVersion();
         String contentType = req.getContentType();
@@ -124,7 +130,7 @@ public class RequestProcessor implements Runnable {
             HttpUtils.checkPathValidation(contextPath);
 
             //리플렉션
-            Class<?> clazz = Class.forName("com.nhn.was.servlets."+contextPath.substring(1));
+            Class<?> clazz = Class.forName(getClass().getPackage().getName()+".servlets."+contextPath.substring(1));
             Method method = clazz.getDeclaredMethod("service", HttpRequest.class,HttpResponse.class);
             Constructor<?> constructor = clazz.getConstructor();
 
@@ -136,6 +142,7 @@ public class RequestProcessor implements Runnable {
             LOG.error("trace :: {}",LogUtils.getStackTrace(e));
 
             httpStatus = HttpURLConnection.HTTP_NOT_FOUND;
+            System.out.println("hostName:"+hostName);
 
             String body = HttpUtils.getBodyString(new File(rootDirectory, errFiles.get(hostName).get(httpStatus)));
             HttpUtils.response(res.getWriter(), httpStatus, version, contentType, body);
