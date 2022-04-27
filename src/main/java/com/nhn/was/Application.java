@@ -2,11 +2,14 @@ package com.nhn.was;
 
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.Reader;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import org.apache.commons.io.IOUtils;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -21,13 +24,16 @@ public class Application {
 
     public static void main(String[] args) throws URISyntaxException {
         try {
-            // get the Document root
+            // get the Document rootgetResource
             ClassLoader loader = Application.class.getClassLoader();
-            Path path = Paths.get(loader.getResource("setup.json").toURI());
-            Reader reader = new FileReader(path.toString());
+            InputStream inputStream = loader.getResourceAsStream("setup.json");
+            String jsonString = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
 
+            // Path path = Paths.get(loader.("setup.json").toURI());
+            // Reader reader = new FileReader(path.toString());
+            
             JSONParser parser = new JSONParser();
-            JSONObject jsonObject = (JSONObject) parser.parse(reader);
+            JSONObject jsonObject = (JSONObject) parser.parse(jsonString);
 
             // set the port to listen on
             int port = Integer.parseInt(jsonObject.get("port").toString());
